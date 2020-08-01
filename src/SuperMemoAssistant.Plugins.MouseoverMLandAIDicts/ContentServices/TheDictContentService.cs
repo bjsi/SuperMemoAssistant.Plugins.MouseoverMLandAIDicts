@@ -144,15 +144,24 @@ namespace SuperMemoAssistant.Plugins.MouseoverMLandAIDicts
         return null;
 
       var dls = doc.DocumentNode.SelectNodes("//dl");
+
+      HtmlNode titleNode = null;
+      HtmlNode contentNode = null;
+
       foreach (var dl in dls)
       {
-        var a = dl.SelectNodes("//a").Where(x => x.GetAttributeValue(, null)).FirstOrDefault();
-      }
-      
-      // var anchors = dl.Select
+        var a = dl
+          .SelectNodes("//a")
+          .Where(x => x.GetAttributeValue("name", null) == term.Substring(1))
+          .FirstOrDefault();
 
-      var titleNode = doc.DocumentNode.Descendants().Where(x => x.Id == "firstHeading").FirstOrDefault();
-      var contentNode = doc.DocumentNode.Descendants().Where(x => x.Id == "mw-content-text").FirstOrDefault();
+        if (a.IsNull())
+          continue;
+
+        titleNode = a.SelectSingleNode("//dt");
+        contentNode = a.NextSibling;
+
+      }
 
       if (titleNode.IsNull() || contentNode.IsNull())
         return null;
@@ -174,7 +183,7 @@ namespace SuperMemoAssistant.Plugins.MouseoverMLandAIDicts
       html = string.Format(html, title, definition);
 
       var refs = new References();
-      refs.Title = title;
+      refs.Title = titleNode.InnerText;
       refs.Author = "Bill Wilson";
       refs.Link = url;
       refs.Source = source;

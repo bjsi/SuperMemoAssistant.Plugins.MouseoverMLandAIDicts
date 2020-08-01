@@ -79,35 +79,37 @@ namespace SuperMemoAssistant.Plugins.MouseoverMLandAIDicts
       if (url.IsNullOrEmpty() || term.IsNullOrEmpty())
         return null;
 
-      var titleNode = CachedHtmlDoc.DocumentNode.Descendants().Where(x => x.Id == "firstHeading").FirstOrDefault();
-      var contentNode = CachedHtmlDoc.DocumentNode.Descendants().Where(x => x.Id == "mw-content-text").FirstOrDefault();
-
-      if (titleNode.IsNull() || contentNode.IsNull())
+      var titleNode = CachedHtmlDoc.DocumentNode.SelectSingleNode("//" + term.Substring(1));
+      if (titleNode.IsNull())
         return null;
 
-      string title = titleNode.OuterHtml;
-      string definition = contentNode.OuterHtml;
+      string content = string.Empty;
 
-      if (title.IsNullOrEmpty() || definition.IsNullOrEmpty())
+      var cur = titleNode;
+      while (!cur.IsNull() && cur.Name.ToLower() != "h2")
+      {
+        content += cur.OuterHtml;
+        cur = cur.NextSibling;
+      }
+
+      if (content.IsNullOrEmpty())
         return null;
 
       string html = @"
           <html>
             <body>
-              <h1>{0}</h1>
-              <p>{1}</p>
+              <p>{0}</p>
             </body>
           </html>";
 
-      html = string.Format(html, title, definition);
+      html = string.Format(html, content);
 
       var refs = new References();
-      refs.Title = title;
-      refs.Author = "Piotr Wozniak";
+      refs.Title = titleNode.InnerText;
       refs.Link = url;
-      refs.Source = "SuperMemo Guru Glossary";
+      refs.Source = "Google Machine Learning Glossary";
 
-      return new PopupContent(refs, html, true, browserQuery: url, editUrl: $"https://supermemo.guru/index.php?title={term}&action=edit");
+      return new PopupContent(refs, html, true, browserQuery: url);
 
     }
   }
