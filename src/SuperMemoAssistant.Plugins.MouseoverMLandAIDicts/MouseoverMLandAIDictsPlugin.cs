@@ -32,7 +32,12 @@
 namespace SuperMemoAssistant.Plugins.MouseoverMLandAIDicts
 {
   using System.Diagnostics.CodeAnalysis;
+  using Anotar.Serilog;
+  using MouseoverPopup.Interop;
+  using SuperMemoAssistant.Services;
+  using SuperMemoAssistant.Services.IO.HotKeys;
   using SuperMemoAssistant.Services.Sentry;
+  using SuperMemoAssistant.Services.UI.Configuration;
 
   // ReSharper disable once UnusedMember.Global
   // ReSharper disable once ClassNeverInstantiated.Global
@@ -54,55 +59,80 @@ namespace SuperMemoAssistant.Plugins.MouseoverMLandAIDicts
     /// <inheritdoc />
     public override bool HasSettings => false;
 
-    private const string TheMLDictRegex = @"^https?\:\/\/(?:www\.)?cse\.unsw\.edu\.au\/\~billw\/mldict\.html(#\w+)?";
-    private const string TheAIDictRegex = @"^https?\:\/\/(?:www\.)?cse\.unsw\.edu\.au\/\~billw\/aidict\.html(#\w+)?";
-    private const string TheNLPDictRegex = @"^https?\:\/\/(?:www\.)?cse\.unsw\.edu\.au\/\~billw\/nlpdict\.html(#\w+)?";
-    private const string GoogleMLGlossRegex = @"^https?\:\/\/(?:www\.)?developers\.google\.com\/machine-learning\/glossary(#[\w-]+)?";
+    public MouseoverMLandAIDictCfg Config;
+
+    // Services
+    private GoogleContentService _googleContentService = new GoogleContentService();
+    private TheDictContentService _theDictContentService = new TheDictContentService();
+
+    // Reference Regexes
+    private string[] TitleRegexes => Config.ReferenceTitleRegexes?.Replace("\r\n", "\n")?.Split('\n');
+    private string[] AuthorRegexes => Config.ReferenceAuthorRegexes?.Replace("\r\n", "\n")?.Split('\n');
+    private string[] LinkRegexes => Config.ReferenceLinkRegexes?.Replace("\r\n", "\n")?.Split('\n');
+    private string[] SourceRegexes => Config.ReferenceSourceRegexes?.Replace("\r\n", "\n")?.Split('\n');
+
+    // Category Path Regexes
+    private string[] CategoryPathRegexes => Config.ConceptNameRegexes?.Replace("\r\n", "\n")?.Split('\n');
 
     #endregion
 
     #region Methods Impl
 
+    private void LoadConfig()
+    {
+      Config = Svc.Configuration.Load<MouseoverMLandAIDictCfg>() ?? new MouseoverMLandAIDictCfg();
+    }
+
     /// <inheritdoc />
     protected override void PluginInit()
     {
 
-    }
+      LoadConfig();
 
-    private void RegisterTheNLPDictProvider()
-    {
-
-    }
-
-    private void RegisterTheAIDictProvider()
-    {
+      // Register providers
+      RegisterGoogleMLGlossProvider();
+      RegisterTheDictProvider();
 
     }
 
-    private void RegisterTheMLDictProvider()
+    // /// <inheritdoc
+    public override void ShowSettings()
     {
+      ConfigurationWindow.ShowAndActivate(HotKeyManager.Instance, Config);
+    }
+
+    private void RegisterTheDictProvider()
+    {
+
+      var referenceRegexes = new ReferenceRegexes(TitleRegexes, AuthorRegexes, LinkRegexes, SourceRegexes);
+      KeywordScanningOptions opts = new KeywordScanningOptions(referenceRegexes, Keywords.TheDictKeywords, MapType.URL, CategoryPathRegexes);
+
+      // Register with MouseoverPopup
+      if (!this.RegisterProvider(Name + " The Dict", new string[] { UrlUtils.TheAIDictRegex, UrlUtils.TheMLDictRegex, UrlUtils.TheNLPDictRegex }, opts, _theDictContentService))
+      {
+        LogTo.Error($"Failed to Register provider {Name + " The Dict"} with MouseoverPopup Service");
+        return;
+      }
+
+      LogTo.Debug($"Successfully registered provider {Name + " The Dict"} with MouseoverPopup Service");
+
 
     }
 
     private void RegisterGoogleMLGlossProvider()
     {
       var referenceRegexes = new ReferenceRegexes(TitleRegexes, AuthorRegexes, LinkRegexes, SourceRegexes);
-      KeywordScanningOptions opts = new KeywordScanningOptions(referenceRegexes, Keywords.HelpKeywordMap, MapType.URL, CategoryPathRegexes);
+      KeywordScanningOptions opts = new KeywordScanningOptions(referenceRegexes, Keywords.GoogleKeywords, MapType.URL, CategoryPathRegexes);
 
       // Register with MouseoverPopup
-      if (!this.RegisterProvider(ProviderName + " Guru", new string[] { UrlUtils.GuruGlossaryRegex }, opts, _guruContentProvider))
+      if (!this.RegisterProvider(Name + " Google", new string[] { UrlUtils.GoogleMLGlossRegex }, opts, _googleContentService))
       {
-        LogTo.Error($"Failed to Register provider {ProviderName} with MouseoverPopup Service");
+        LogTo.Error($"Failed to Register provider {Name + " Google"} with MouseoverPopup Service");
         return;
       }
 
-      LogTo.Debug($"Successfully registered provider {ProviderName} with MouseoverPopup Service");
+      LogTo.Debug($"Successfully registered provider {Name + " Google"} with MouseoverPopup Service");
 
-    }
-
-    // /// <inheritdoc />
-    public override void ShowSettings()
-    {
     }
 
     #endregion

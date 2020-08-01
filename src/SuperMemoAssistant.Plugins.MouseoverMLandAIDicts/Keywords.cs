@@ -12,15 +12,13 @@ namespace SuperMemoAssistant.Plugins.MouseoverMLandAIDicts
   public static class Keywords
   {
 
-    private const string TheMLDictJson = @"keyword_url_map_1.json";
-    private const string TheNLPDictJson = @"keyword_url_map_2.json";
-    private const string TheAIDictJson = @"keyword_url_map_2.json";
+    // Json File Paths
+    private const string TheDictJson = @"C:\Users\james\SuperMemoAssistant\Plugins\Development\SuperMemoAssistant.Plugins.MouseoverMLandAIDicts\dictionaries\google_keyword_url_map.json";
+    private const string GoogleMLGlossJson = @"C:\Users\james\SuperMemoAssistant\Plugins\Development\SuperMemoAssistant.Plugins.MouseoverMLandAIDicts\dictionaries\the_dict_keyword_url_map.json";
 
-    private const string GoogleMLGlossJson = @"";
-
-    public static Dictionary<string, string> TheMLDictKeywords => CreateJsonDict(TheMLDictJson);
-    public static Dictionary<string, string> TheAIDictKeywords => CreateJsonDict(TheAIDictJson);
-    public static Dictionary<string, string> TheNLPDictKeywords => CreateJsonDict(TheNLPDictJson);
+    // Keyword -> Url maps
+    public static Dictionary<string, string> TheDictKeywords => CreateJsonDict(TheDictJson);
+    public static Dictionary<string, string> GoogleKeywords => CreateJsonDict(GoogleMLGlossJson);
 
     private static Dictionary<string, string> CreateJsonDict(string jsonPath)
     {
